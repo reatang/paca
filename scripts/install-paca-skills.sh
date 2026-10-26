@@ -736,10 +736,12 @@ echo "  ────────────────────────
 # correct label, from resolving it via GET /api/v1/plugins). Both writes are
 # identical content to the same file, so nothing is functionally wrong, but
 # printing both lines would be confusing. Keep the last (correctly labeled)
-# occurrence per skill name while preserving overall order — the classic
-# reverse/dedupe-first/reverse idiom, since `awk '!seen[$1]++'` alone would
-# keep the first (mislabeled) occurrence instead.
-tac "${SUMMARY_TMP}" | awk '!seen[$1]++' | tac
+# occurrence per skill name while preserving overall order, since
+# `awk '!seen[$1]++'` alone would keep the first (mislabeled) occurrence
+# instead. Done in a single awk pass rather than the reverse/dedupe/reverse
+# `tac` idiom — `tac` is GNU-only and missing on stock macOS.
+awk '{ line[NR] = $0; key[NR] = $1; last[$1] = NR }
+     END { for (i = 1; i <= NR; i++) if (last[key[i]] == i) print line[i] }' "${SUMMARY_TMP}"
 echo ""
 echo "  Where they went:"
 $INSTALL_CLAUDE && echo "    Claude Code   → ${CLAUDE_DIR}/"
